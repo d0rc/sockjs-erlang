@@ -101,7 +101,8 @@ strip_prefix(LongPath, Prefix) ->
 
 -spec dispatch_req(service(), req()) -> {dispatch_result(), req()}.
 dispatch_req(#service{prefix = Prefix}, Req) ->
-    {Method, Req1} = sockjs_http:method(Req),
+    {MethodPre, Req1} = sockjs_http:method(Req),
+    Method = erlang:binary_to_existing_atom(MethodPre, latin1),
     {LongPath, Req2} = sockjs_http:path(Req1),
     {ok, PathRemainder} = strip_prefix(LongPath, Prefix),
     {dispatch(Method, PathRemainder), Req2}.
@@ -177,6 +178,7 @@ handle({bad_method, Methods}, _Service, Req) ->
     MethodsStr = string:join([atom_to_list(M) || M <- Methods],
                              ", "),
     H = [{"Allow", MethodsStr}],
+    io:format("Hit 405 error with request ~p ~n", [Req]),
     sockjs_http:reply(405, H, "", Req);
 
 handle({match, {Type, Action, _Server, Session, Filters}}, Service, Req) ->
@@ -206,7 +208,7 @@ handle({match, {Type, Action, _Server, Session, Filters}}, Service, Req) ->
 default_logger(_Service, Req, _Type) ->
     {LongPath, Req1} = sockjs_http:path(Req),
     {Method, Req2}   = sockjs_http:method(Req1),
-    io:format("~s ~s~n", [Method, LongPath]),
+    io:format("SockJS: ~s ~s~n", [Method, LongPath]),
     Req2.
 
 -spec extract_info(req()) -> {info(), req()}.

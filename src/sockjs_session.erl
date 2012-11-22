@@ -36,6 +36,7 @@
 
 -spec init() -> ok.
 init() ->
+    io:format("SockJS, creating ets table, named ~p ~n", [?ETS]),
     _ = ets:new(?ETS, [public, named_table]),
     ok.
 
@@ -45,7 +46,7 @@ start_link(SessionId, Service, Info) ->
 
 -spec maybe_create(session_or_undefined(), service(), info()) -> pid().
 maybe_create(SessionId, Service, Info) ->
-    case ets:lookup(?ETS, SessionId) of
+    case ets:lookup(?ETS, list_to_binary(SessionId)) of
         []          -> {ok, SPid} = sockjs_session_sup:start_child(
                                       SessionId, Service, Info),
                        SPid;
